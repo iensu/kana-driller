@@ -1,0 +1,161 @@
+:root {
+  --resultProgressPercent: 0%;
+}
+
+html {
+  font-size: 24px;
+  font-weight: bold;
+  font-family: "Arial";
+  color: black;
+}
+
+button {
+  color: black;
+}
+
+body {
+  min-width: 100vw;
+  background: linear-gradient(#06ee00 30%, white);
+  background-repeat: no-repeat;
+  background-size: cover;
+  /* https://stackoverflow.com/a/62733325 */
+  background-attachment: fixed;
+}
+
+.app {
+  display: flex;
+  align-items: center;
+  padding: 16px;
+}
+
+#kana {
+  font-size: 5rem;
+  font-weight: bold;
+}
+
+.screen {
+  width: 100%;
+  height: 100vh;
+  display: grid;
+  flex-direction: column;
+  align-items: center;
+}
+
+.drill {
+  width: 90%;
+  max-width: 500px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-self: center;
+}
+
+.candidates {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  justify-content: space-between;
+}
+.candidates button {
+  width: 64px;
+  font-size: 1rem;
+  padding: 8px;
+  border-radius: 8px;
+  border: white solid 3px;
+  background: white;
+}
+.candidates button.correct {
+  border: green solid 3px;
+  background: green;
+  color: white;
+}
+.candidates button.incorrect {
+  border: red solid 3px;
+  background: red;
+  color: white;
+}
+.candidates button.correct-answer {
+  border: green solid 3px;
+}
+
+.navigation {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  width: 100%;
+}
+.navigation button {
+  font-size: 2rem;
+  font-weight: bold;
+  border: none;
+  background: none;
+}
+
+#progress {
+  width: 80vw;
+  max-width: 500px;
+  min-height: 50px;
+  background-color: #eee;
+  border-radius: 2px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.25) inset;
+}
+#progress-value {
+  background: linear-gradient(to right, #00cc22 0%, green 40%);
+  width: var(--resultProgressPercent);
+  height: 100%;
+  animation: gradual-fill 2s ease-in-out;
+}
+
+@keyframes gradual-fill {
+  0% {
+    width: 0%;
+  }
+}
+
+.hide {
+  display: none !important;
+}
+
+#results {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+#drills {
+  list-style: none;
+  padding: 0;
+}
+#drills li {
+  max-width: 400px;
+  display: flex;
+  flex-direction: row;
+  gap: 32px;
+  align-items: center;
+  padding: 8px;
+  margin-bottom: 8px;
+}
+#drills li .icon:before {
+  font-weight: 300;
+  font-size: 0.8rem;
+}
+#drills li .kana {
+  font-width: normal;
+  font-size: 1.5rem;
+}
+#drills li .text {
+  font-weight: normal;
+}
+#drills li.failed-drill .answer {
+  text-decoration: line-through;
+}
+#drills li.failed-drill .icon:before {
+  display: inline-block;
+  content: "❌";
+}
+#drills li.correct-drill .icon:before {
+  display: inline-block;
+  content: "✅";
+}

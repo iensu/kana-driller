@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>KanaDriller</title>
+    <script src="main.js"></script>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app">
+      <div class="screen" id="intro">
+        <h1>Öva Katakana!</h1>
+        <button id="start" onClick="startGame()">Starta!</button>
+      </div>
+
+      <div class="screen" id="game">
+        <div class="drill">
+          <div id="kana"></div>
+          <ul class="candidates">
+            <li>
+              <button id="candidate-1" onClick="respond(event)"></button>
+            </li>
+            <li>
+              <button id="candidate-2" onClick="respond(event)"></button>
+            </li>
+            <li>
+              <button id="candidate-3" onClick="respond(event)"></button>
+            </li>
+            <li>
+              <button id="candidate-4" onClick="respond(event)"></button>
+            </li>
+          </ul>
+          <div class="navigation">
+            <button id="previous" onClick="previous()">&lt;</button>
+            <button id="next" onClick="next()">&gt;</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="screen" id="results">
+        <h1>ケッカ</h1>
+        <div id="progress">
+          <div id="progress-value"></div>
+        </div>
+        <ul id="drills"></ul>
+      </div>
+    </div>
+  </body>
+  <script>
+    const totalDrills = 20;
+    let kanaDriller = KanaDriller(totalDrills);
+
+    const introScreen = document.getElementById("intro");
+    const gameScreen = document.getElementById("game");
+    const resultsScreen = document.getElementById("results");
+
+    gameScreen.classList.add("hide");
+    resultsScreen.classList.add("hide");
+
+    function renderDrill() {
+      const current = kanaDriller.currentDrill();
+      document.getElementById("kana").innerText = current.kana;
+
+      current.candidates.forEach((c, idx) => {
+        const el = document.getElementById(`candidate-${idx + 1}`);
+
+        el.innerText = c;
+
+        if (current.answer && current.answer === c) {
+          el.classList.add(
+            current.answer === current.correctAnswer ? "correct" : "incorrect",
+          );
+        } else if (current.answer && c === current.correctAnswer) {
+          el.classList.add("correct-answer");
+        } else {
+          el.classList.remove("correct");
+          el.classList.remove("incorrect");
+          el.classList.remove("correct-answer");
+        }
+      });
+
+      const previousButton = document.getElementById("previous");
+      const nextButton = document.getElementById("next");
+
+      if (kanaDriller.isFirst()) {
+        previousButton.disabled = true;
+        previousButton.innerText = " ";
+      } else {
+        previousButton.disabled = false;
+        previousButton.innerText = "<";
+      }
+
+      if (kanaDriller.isLast()) {
+        nextButton.disabled = true;
+        nextButton.innerText = " ";
+      } else {
+        nextButton.disabled = false;
+        nextButton.innerText = ">";
+      }
+    }
+
+    function renderResults() {
+      const result = kanaDriller.result();
+      document.body.style.setProperty(
+        "--resultProgressPercent",
+        `${Math.round(100 * (result.points / totalDrills))}%`,
+      );
+      gameScreen.classList.add("hide");
+      introScreen.classList.add("hide");
+      resultsScreen.classList.remove("hide");
+
+      const drills = result.drills
+        .map((drill) => {
+          const isCorrect = drill.answer === drill.correctAnswer;
+          return `
+    <li class="${isCorrect ? "correct-drill" : "failed-drill"}">
+        <span class="icon"></span>
+        <div class="kana">${drill.kana}</div>
+        <div class="text answer">${drill.answer || " "}</div>
+        <div class="text correct">${isCorrect ? " " : drill.correctAnswer}</div>
+    </li>
+            `;
+        })
+        .join("\n")
+        .trim();
+
+      const template = document.createElement("template");
+      template.innerHTML = drills;
+
+      document.getElementById("drills").append(...template.content.childNodes);
+    }
+
+    function startGame() {
+      kanaDriller = KanaDriller(totalDrills);
+      renderDrill();
+      gameScreen.classList.remove("hide");
+      introScreen.classList.add("hide");
+      resultsScreen.classList.add("hide");
+    }
+
+    function previous() {
+      kanaDriller.previousDrill();
+      renderDrill();
+    }
+
+    function next() {
+      if (kanaDriller.isLast()) {
+        renderResults();
+      } else {
+        kanaDriller.nextDrill();
+        renderDrill();
+      }
+    }
+
+    function respond(e) {
+      const answer = e.target.innerText;
+      kanaDriller.respond(answer);
+      next();
+    }
+
+    // TODO: Remove after implementing intro screen
+    startGame();
+  </script>
+</html>
