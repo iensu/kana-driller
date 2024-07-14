@@ -16,6 +16,7 @@
               nodePackages.prettier
               nodePackages.typescript
               nodePackages.typescript-language-server
+              vscode-langservers-extracted
             ];
 
             shellHook = ''

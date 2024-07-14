@@ -48,7 +48,7 @@
     </div>
   </body>
   <script>
-    const totalDrills = 20;
+    const totalDrills = 10;
     let kanaDriller = KanaDriller(totalDrills);
 
     const introScreen = document.getElementById("intro");
@@ -58,25 +58,34 @@
     gameScreen.classList.add("hide");
     resultsScreen.classList.add("hide");
 
+    function addTransition(elem, className, durationMs = 1000) {
+      elem.classList.add(className);
+      setTimeout(() => elem.classList.remove(className), durationMs);
+    }
+
     function renderDrill() {
       const current = kanaDriller.currentDrill();
-      document.getElementById("kana").innerText = current.kana;
+      const kanaElem = document.getElementById("kana");
+      addTransition(kanaElen, "enter-kana");
+      kanaElem.innerText = current.kana;
 
       current.candidates.forEach((c, idx) => {
-        const el = document.getElementById(`candidate-${idx + 1}`);
+        const candidateElem = document.getElementById(`candidate-${idx + 1}`);
 
-        el.innerText = c;
+        addTransition(candidateElem, "enter-candidate");
+
+        candidateElem.innerText = c;
 
         if (current.answer && current.answer === c) {
-          el.classList.add(
+          candidateElem.classList.add(
             current.answer === current.correctAnswer ? "correct" : "incorrect",
           );
         } else if (current.answer && c === current.correctAnswer) {
-          el.classList.add("correct-answer");
+          candidateElem.classList.add("correct-answer");
         } else {
-          el.classList.remove("correct");
-          el.classList.remove("incorrect");
-          el.classList.remove("correct-answer");
+          candidateElem.classList.remove("correct");
+          candidateElem.classList.remove("incorrect");
+          candidateElem.classList.remove("correct-answer");
         }
       });
 
