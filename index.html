@@ -10,8 +10,44 @@
   <body>
     <div class="app">
       <div class="screen" id="intro">
-        <h1>Öva Katakana!</h1>
-        <button id="start" onClick="startGame()">Starta!</button>
+        <h1>Öva Kana!</h1>
+        <div class="option-group">
+          <button
+            class="option-btn selected"
+            id="opt-katakana"
+            onclick="selectScript('katakana')"
+          >
+            カタカナ
+          </button>
+          <button
+            class="option-btn"
+            id="opt-hiragana"
+            onclick="selectScript('hiragana')"
+          >
+            ひらがな
+          </button>
+        </div>
+        <div class="option-group">
+          <button
+            class="option-btn selected"
+            id="opt-20"
+            onclick="selectCount(20)"
+          >
+            20
+          </button>
+          <button class="option-btn" id="opt-30" onclick="selectCount(30)">
+            30
+          </button>
+          <button class="option-btn" id="opt-50" onclick="selectCount(50)">
+            50
+          </button>
+          <button class="option-btn" id="opt-all" onclick="selectCount('ALL')">
+            Alla
+          </button>
+        </div>
+        <button class="option-btn" id="start" onClick="startGame()">
+          Starta!
+        </button>
       </div>
 
       <div class="screen" id="game">
@@ -48,8 +84,9 @@
     </div>
   </body>
   <script>
-    const totalDrills = 20;
-    let kanaDriller = KanaDriller(totalDrills);
+    let selectedCount = 20;
+    let selectedScript = "katakana";
+    let kanaDriller = KanaDriller(selectedCount, selectedScript);
 
     const introScreen = document.getElementById("intro");
     const gameScreen = document.getElementById("game");
@@ -113,7 +150,7 @@
       const result = kanaDriller.result();
       document.body.style.setProperty(
         "--resultProgressPercent",
-        `${Math.round(100 * (result.points / totalDrills))}%`,
+        `${Math.round(100 * (result.points / result.drills.length))}%`,
       );
       gameScreen.classList.add("hide");
       introScreen.classList.add("hide");
@@ -140,8 +177,26 @@
       document.getElementById("drills").append(...template.content.childNodes);
     }
 
+    function selectScript(script) {
+      selectedScript = script;
+      document
+        .querySelectorAll("#opt-katakana, #opt-hiragana")
+        .forEach((btn) => btn.classList.remove("selected"));
+      document.getElementById(`opt-${script}`).classList.add("selected");
+    }
+
+    function selectCount(count) {
+      selectedCount = count;
+      document
+        .querySelectorAll("#opt-20, #opt-30, #opt-50, #opt-all")
+        .forEach((btn) => btn.classList.remove("selected"));
+      const id = count === "ALL" ? "opt-all" : `opt-${count}`;
+      document.getElementById(id).classList.add("selected");
+    }
+
     function startGame() {
-      kanaDriller = KanaDriller(totalDrills);
+      kanaDriller = KanaDriller(selectedCount, selectedScript);
+      document.getElementById("drills").innerHTML = "";
       renderDrill();
       gameScreen.classList.remove("hide");
       introScreen.classList.add("hide");
@@ -167,8 +222,5 @@
       kanaDriller.respond(answer);
       next();
     }
-
-    // TODO: Remove after implementing intro screen
-    startGame();
   </script>
 </html>

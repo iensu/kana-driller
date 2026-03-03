@@ -105,11 +105,14 @@ const KANA_TABLE = [
 
 const scope = typeof window !== "undefined" ? window : global;
 
-scope.KanaDriller = function KanaDriller(totalDrills = 30) {
+scope.KanaDriller = function KanaDriller(totalDrills = 30, scriptType = "katakana") {
+  const kanaColIndex = scriptType === "hiragana" ? 2 : 1;
   const randomInt = (max) => Math.floor(Math.random() * max);
 
-  const kanaDrill = (kanaIndex) => {
-    const [romaji, katakana, _hiragana] = KANA_TABLE[kanaIndex];
+  const kanaDrill = (tableIndex) => {
+    const entry = KANA_TABLE[tableIndex];
+    const romaji = entry[0];
+    const kana = entry[kanaColIndex];
     let candidates = new Set([romaji]);
 
     while (candidates.size < 4) {
@@ -123,19 +126,26 @@ scope.KanaDriller = function KanaDriller(totalDrills = 30) {
     }
 
     return {
-      kana: katakana,
+      kana,
       correctAnswer: romaji,
       candidates: [...randomCandidates],
       answer: null,
     };
   };
 
-  const kanaIndices = new Set();
-  while (kanaIndices.size < totalDrills) {
-    kanaIndices.add(randomInt(KANA_TABLE.length));
+  const useAll = totalDrills === "ALL" || totalDrills >= KANA_TABLE.length;
+  let kanaIndices;
+  if (useAll) {
+    kanaIndices = Array.from({ length: KANA_TABLE.length }, (_, i) => i);
+  } else {
+    const kanaIndicesSet = new Set();
+    while (kanaIndicesSet.size < totalDrills) {
+      kanaIndicesSet.add(randomInt(KANA_TABLE.length));
+    }
+    kanaIndices = [...kanaIndicesSet];
   }
 
-  const drills = [...kanaIndices].map(kanaDrill);
+  const drills = kanaIndices.map(kanaDrill);
   let currentDrillIndex = 0;
 
   return {
@@ -146,10 +156,9 @@ scope.KanaDriller = function KanaDriller(totalDrills = 30) {
       return !drills.some((x) => x.answer === null);
     },
     nextDrill() {
-      if (currentDrillIndex < totalDrills - 1) {
+      if (currentDrillIndex < drills.length - 1) {
         currentDrillIndex++;
       }
-
       return this.currentDrill();
     },
     previousDrill() {
@@ -158,7 +167,6 @@ scope.KanaDriller = function KanaDriller(totalDrills = 30) {
       }
       return this.currentDrill();
     },
-
     isFirst() {
       return currentDrillIndex === 0;
     },
@@ -173,7 +181,7 @@ scope.KanaDriller = function KanaDriller(totalDrills = 30) {
         (x) => x.answer && x.correctAnswer !== x.answer,
       );
       const skipped = drills.filter((x) => x.answer === null);
-      const points = totalDrills - failed.length - skipped.length;
+      const points = drills.length - failed.length - skipped.length;
 
       return {
         failed,
