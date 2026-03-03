@@ -28,6 +28,14 @@
           </button>
         </div>
         <div class="option-group">
+          <button class="option-btn" id="opt-enkel" onclick="selectKanaSet('basic')">
+            Enkel
+          </button>
+          <button class="option-btn selected" id="opt-utokad" onclick="selectKanaSet('extended')">
+            Utökad
+          </button>
+        </div>
+        <div class="option-group">
           <button
             class="option-btn selected"
             id="opt-20"
@@ -79,14 +87,61 @@
         <div id="progress">
           <div id="progress-value"></div>
         </div>
+        <p id="result-time"></p>
         <ul id="drills"></ul>
+        <button class="option-btn" onclick="goToStart()">Tillbaka</button>
       </div>
     </div>
   </body>
   <script>
     let selectedCount = 20;
     let selectedScript = "katakana";
+    let selectedKanaSet = "extended";
+
+    (function () {
+      try {
+        const prefs = JSON.parse(localStorage.getItem("kana-drill-prefs") ?? "null");
+        if (!prefs) return;
+        if (["katakana", "hiragana"].includes(prefs.script)) selectScript(prefs.script);
+        if (["basic", "extended"].includes(prefs.kanaSet)) selectKanaSet(prefs.kanaSet);
+        if ([20, 30, 50, "ALL"].includes(prefs.count)) selectCount(prefs.count);
+      } catch {}
+    })();
+
     let kanaDriller = KanaDriller(selectedCount, selectedScript);
+    let startTime;
+
+    function loadStats() {
+      try {
+        const raw = localStorage.getItem("kana-drill-stats");
+        if (!raw) return { version: 1, kana: {} };
+        const parsed = JSON.parse(raw);
+        if (parsed.version !== 1) return { version: 1, kana: {} };
+        return parsed;
+      } catch {
+        return { version: 1, kana: {} };
+      }
+    }
+
+    function savePrefs() {
+      localStorage.setItem(
+        "kana-drill-prefs",
+        JSON.stringify({ script: selectedScript, kanaSet: selectedKanaSet, count: selectedCount }),
+      );
+    }
+
+    function saveStats(stats, result, scriptType) {
+      const nowMs = Date.now();
+      for (const drill of result.drills) {
+        const key = `${scriptType}:${drill.correctAnswer}`;
+        const entry = stats.kana[key] ?? { seen: 0, correct: 0, lastSeen: 0 };
+        entry.seen += 1;
+        if (drill.answer === drill.correctAnswer) entry.correct += 1;
+        entry.lastSeen = nowMs;
+        stats.kana[key] = entry;
+      }
+      localStorage.setItem("kana-drill-stats", JSON.stringify(stats));
+    }
 
     const introScreen = document.getElementById("intro");
     const gameScreen = document.getElementById("game");
@@ -147,7 +202,17 @@
     }
 
     function renderResults() {
+      const elapsed = Math.round((Date.now() - startTime) / 1000);
+      const minutes = Math.floor(elapsed / 60);
+      const seconds = elapsed % 60;
+      const timeStr = minutes > 0
+        ? `${minutes}:${String(seconds).padStart(2, "0")}`
+        : `${seconds}s`;
+      document.getElementById("result-time").textContent = timeStr;
+
       const result = kanaDriller.result();
+      const stats = loadStats();
+      saveStats(stats, result, selectedScript);
       document.body.style.setProperty(
         "--resultProgressPercent",
         `${Math.round(100 * (result.points / result.drills.length))}%`,
@@ -183,6 +248,16 @@
         .querySelectorAll("#opt-katakana, #opt-hiragana")
         .forEach((btn) => btn.classList.remove("selected"));
       document.getElementById(`opt-${script}`).classList.add("selected");
+      savePrefs();
+    }
+
+    function selectKanaSet(set) {
+      selectedKanaSet = set;
+      document.querySelectorAll("#opt-enkel, #opt-utokad")
+        .forEach(btn => btn.classList.remove("selected"));
+      document.getElementById(set === "basic" ? "opt-enkel" : "opt-utokad")
+        .classList.add("selected");
+      savePrefs();
     }
 
     function selectCount(count) {
@@ -192,10 +267,19 @@
         .forEach((btn) => btn.classList.remove("selected"));
       const id = count === "ALL" ? "opt-all" : `opt-${count}`;
       document.getElementById(id).classList.add("selected");
+      savePrefs();
     }
 
     function startGame() {
-      kanaDriller = KanaDriller(selectedCount, selectedScript);
+      startTime = Date.now();
+      const stats = loadStats();
+      const kanaStats = {};
+      for (const [key, val] of Object.entries(stats.kana)) {
+        if (key.startsWith(selectedScript + ":")) {
+          kanaStats[key.slice(selectedScript.length + 1)] = val;
+        }
+      }
+      kanaDriller = KanaDriller(selectedCount, selectedScript, kanaStats, selectedKanaSet);
       document.getElementById("drills").innerHTML = "";
       renderDrill();
       gameScreen.classList.remove("hide");
@@ -222,5 +306,11 @@
       kanaDriller.respond(answer);
       next();
     }
-  </script>
+
+    function goToStart() {
+      resultsScreen.classList.add("hide");
+      gameScreen.classList.add("hide");
+      introScreen.classList.remove("hide");
+    }
+</script>
 </html>

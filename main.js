@@ -103,20 +103,45 @@ const KANA_TABLE = [
   ["pyo", "ピョ", "ぴょ"],
 ];
 
+function computeWeight(stat, nowMs) {
+  if (!stat || stat.seen === 0) return 100;
+
+  const errorRate = 1 - stat.correct / stat.seen;
+  const daysSince = (nowMs - stat.lastSeen) / 86_400_000;
+  const recency = Math.min(daysSince, 30) / 30;
+
+  return 1 + errorRate * 5 + recency * 4;
+}
+
+function weightedSample(weights, n) {
+  const w = [...weights];
+  const selected = [];
+  for (let i = 0; i < n; i++) {
+    const total = w.reduce((s, x) => s + x, 0);
+    let r = Math.random() * total;
+    for (let j = 0; j < w.length; j++) {
+      r -= w[j];
+      if (r <= 0) { selected.push(j); w[j] = 0; break; }
+    }
+  }
+  return selected;
+}
+
 const scope = typeof window !== "undefined" ? window : global;
 
-scope.KanaDriller = function KanaDriller(totalDrills = 30, scriptType = "katakana") {
+scope.KanaDriller = function KanaDriller(totalDrills = 30, scriptType = "katakana", kanaStats = {}, kanaSet = "extended") {
+  const table = kanaSet === "basic" ? KANA_TABLE.slice(0, 46) : KANA_TABLE;
   const kanaColIndex = scriptType === "hiragana" ? 2 : 1;
   const randomInt = (max) => Math.floor(Math.random() * max);
 
   const kanaDrill = (tableIndex) => {
-    const entry = KANA_TABLE[tableIndex];
+    const entry = table[tableIndex];
     const romaji = entry[0];
     const kana = entry[kanaColIndex];
     let candidates = new Set([romaji]);
 
     while (candidates.size < 4) {
-      candidates.add(KANA_TABLE[randomInt(KANA_TABLE.length)][0]);
+      candidates.add(table[randomInt(table.length)][0]);
     }
     candidates = [...candidates];
 
@@ -133,16 +158,15 @@ scope.KanaDriller = function KanaDriller(totalDrills = 30, scriptType = "katakan
     };
   };
 
-  const useAll = totalDrills === "ALL" || totalDrills >= KANA_TABLE.length;
+  const useAll = totalDrills === "ALL" || totalDrills >= table.length;
+  const nowMs = Date.now();
+  const weights = table.map(([romaji]) => computeWeight(kanaStats[romaji] ?? null, nowMs));
+
   let kanaIndices;
   if (useAll) {
-    kanaIndices = Array.from({ length: KANA_TABLE.length }, (_, i) => i);
+    kanaIndices = Array.from({ length: table.length }, (_, i) => i);
   } else {
-    const kanaIndicesSet = new Set();
-    while (kanaIndicesSet.size < totalDrills) {
-      kanaIndicesSet.add(randomInt(KANA_TABLE.length));
-    }
-    kanaIndices = [...kanaIndicesSet];
+    kanaIndices = weightedSample(weights, totalDrills);
   }
 
   const drills = kanaIndices.map(kanaDrill);
