@@ -28,10 +28,18 @@
           </button>
         </div>
         <div class="option-group">
-          <button class="option-btn" id="opt-enkel" onclick="selectKanaSet('basic')">
+          <button
+            class="option-btn"
+            id="opt-enkel"
+            onclick="selectKanaSet('basic')"
+          >
             Enkel
           </button>
-          <button class="option-btn selected" id="opt-utokad" onclick="selectKanaSet('extended')">
+          <button
+            class="option-btn selected"
+            id="opt-utokad"
+            onclick="selectKanaSet('extended')"
+          >
             Utökad
           </button>
         </div>
@@ -100,10 +108,14 @@
 
     (function () {
       try {
-        const prefs = JSON.parse(localStorage.getItem("kana-drill-prefs") ?? "null");
+        const prefs = JSON.parse(
+          localStorage.getItem("kana-drill-prefs") ?? "null",
+        );
         if (!prefs) return;
-        if (["katakana", "hiragana"].includes(prefs.script)) selectScript(prefs.script);
-        if (["basic", "extended"].includes(prefs.kanaSet)) selectKanaSet(prefs.kanaSet);
+        if (["katakana", "hiragana"].includes(prefs.script))
+          selectScript(prefs.script);
+        if (["basic", "extended"].includes(prefs.kanaSet))
+          selectKanaSet(prefs.kanaSet);
         if ([20, 30, 50, "ALL"].includes(prefs.count)) selectCount(prefs.count);
       } catch {}
     })();
@@ -126,7 +138,11 @@
     function savePrefs() {
       localStorage.setItem(
         "kana-drill-prefs",
-        JSON.stringify({ script: selectedScript, kanaSet: selectedKanaSet, count: selectedCount }),
+        JSON.stringify({
+          script: selectedScript,
+          kanaSet: selectedKanaSet,
+          count: selectedCount,
+        }),
       );
     }
 
@@ -155,16 +171,16 @@
       setTimeout(() => elem.classList.remove(className), durationMs);
     }
 
-    function renderDrill() {
+    function renderDrill(animate = true) {
       const current = kanaDriller.currentDrill();
       const kanaElem = document.getElementById("kana");
-      addTransition(kanaElem, "enter-kana");
+      if (animate) addTransition(kanaElem, "enter-kana");
       kanaElem.innerText = current.kana;
 
       current.candidates.forEach((c, idx) => {
         const candidateElem = document.getElementById(`candidate-${idx + 1}`);
 
-        addTransition(candidateElem, "enter-candidate");
+        if (animate) addTransition(candidateElem, "enter-candidate");
 
         candidateElem.innerText = c;
 
@@ -179,6 +195,8 @@
           candidateElem.classList.remove("incorrect");
           candidateElem.classList.remove("correct-answer");
         }
+
+        candidateElem.disabled = !!current.answer;
       });
 
       const previousButton = document.getElementById("previous");
@@ -205,9 +223,10 @@
       const elapsed = Math.round((Date.now() - startTime) / 1000);
       const minutes = Math.floor(elapsed / 60);
       const seconds = elapsed % 60;
-      const timeStr = minutes > 0
-        ? `${minutes}:${String(seconds).padStart(2, "0")}`
-        : `${seconds}s`;
+      const timeStr =
+        minutes > 0
+          ? `${minutes}:${String(seconds).padStart(2, "0")}`
+          : `${seconds}s`;
       document.getElementById("result-time").textContent = timeStr;
 
       const result = kanaDriller.result();
@@ -253,9 +272,11 @@
 
     function selectKanaSet(set) {
       selectedKanaSet = set;
-      document.querySelectorAll("#opt-enkel, #opt-utokad")
-        .forEach(btn => btn.classList.remove("selected"));
-      document.getElementById(set === "basic" ? "opt-enkel" : "opt-utokad")
+      document
+        .querySelectorAll("#opt-enkel, #opt-utokad")
+        .forEach((btn) => btn.classList.remove("selected"));
+      document
+        .getElementById(set === "basic" ? "opt-enkel" : "opt-utokad")
         .classList.add("selected");
       savePrefs();
     }
@@ -279,7 +300,12 @@
           kanaStats[key.slice(selectedScript.length + 1)] = val;
         }
       }
-      kanaDriller = KanaDriller(selectedCount, selectedScript, kanaStats, selectedKanaSet);
+      kanaDriller = KanaDriller(
+        selectedCount,
+        selectedScript,
+        kanaStats,
+        selectedKanaSet,
+      );
       document.getElementById("drills").innerHTML = "";
       renderDrill();
       gameScreen.classList.remove("hide");
@@ -304,7 +330,15 @@
     function respond(e) {
       const answer = e.target.innerText;
       kanaDriller.respond(answer);
-      next();
+
+      const current = kanaDriller.currentDrill();
+      renderDrill(false);
+
+      if (answer === current.correctAnswer) {
+        next();
+      } else {
+        setTimeout(next, 3000);
+      }
     }
 
     function goToStart() {
@@ -312,5 +346,5 @@
       gameScreen.classList.add("hide");
       introScreen.classList.remove("hide");
     }
-</script>
+  </script>
 </html>

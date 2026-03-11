@@ -78,6 +78,16 @@ body {
 }
 .candidates button.correct-answer {
   border: green solid 3px;
+  animation: correct-answer-pulse 0.6s ease-in-out infinite alternate;
+}
+
+@keyframes correct-answer-pulse {
+  from {
+    transform: scale(1);
+  }
+  to {
+    transform: scale(1.2);
+  }
 }
 
 .navigation {
