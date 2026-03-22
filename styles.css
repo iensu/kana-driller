@@ -12,6 +12,9 @@ html {
   width: 100%;
   height: 100%;
   touch-action: none;
+  background: linear-gradient(#00a000 30%, white);
+  background-repeat: no-repeat;
+  background-size: cover;
 }
 
 button {
@@ -24,11 +27,6 @@ body {
   width: 100%;
   height: 100%;
   touch-action: none;
-  background: linear-gradient(#00a000 30%, white);
-  background-repeat: no-repeat;
-  background-size: cover;
-  /* https://stackoverflow.com/a/62733325 */
-  background-attachment: fixed;
 }
 
 .app {
@@ -208,6 +206,8 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
+  overflow-y: auto;
+  padding-bottom: 128px;
 }
 
 #drills {
