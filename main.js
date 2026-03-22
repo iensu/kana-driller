@@ -208,6 +208,11 @@ scope.KanaDriller = function KanaDriller(totalDrills = 30, scriptType = "katakan
     kanaIndices = weightedSample(weights, totalDrills);
   }
 
+  for (let i = kanaIndices.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [kanaIndices[i], kanaIndices[j]] = [kanaIndices[j], kanaIndices[i]];
+  }
+
   const drills = kanaIndices.map(kanaDrill);
   let currentDrillIndex = 0;
 
