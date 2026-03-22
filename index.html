@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
     <title>KanaDriller</title>
     <script src="main.js"></script>
     <link rel="stylesheet" href="styles.css" />
@@ -11,55 +11,65 @@
     <div class="app">
       <div class="screen" id="intro">
         <h1>Öva Kana!</h1>
-        <div class="option-group">
-          <button
-            class="option-btn selected"
-            id="opt-katakana"
-            onclick="selectScript('katakana')"
-          >
-            カタカナ
-          </button>
-          <button
-            class="option-btn"
-            id="opt-hiragana"
-            onclick="selectScript('hiragana')"
-          >
-            ひらがな
-          </button>
-        </div>
-        <div class="option-group">
-          <button
-            class="option-btn"
-            id="opt-enkel"
-            onclick="selectKanaSet('basic')"
-          >
-            Enkel
-          </button>
-          <button
-            class="option-btn selected"
-            id="opt-utokad"
-            onclick="selectKanaSet('extended')"
-          >
-            Utökad
-          </button>
-        </div>
-        <div class="option-group">
-          <button
-            class="option-btn selected"
-            id="opt-20"
-            onclick="selectCount(20)"
-          >
-            20
-          </button>
-          <button class="option-btn" id="opt-30" onclick="selectCount(30)">
-            30
-          </button>
-          <button class="option-btn" id="opt-50" onclick="selectCount(50)">
-            50
-          </button>
-          <button class="option-btn" id="opt-all" onclick="selectCount('ALL')">
-            Alla
-          </button>
+        <div class="options">
+          <div class="option-group">
+            <button
+              class="option-btn selected"
+              id="opt-katakana"
+              onclick="selectScript('katakana')"
+            >
+              カタカナ
+            </button>
+            <button
+              class="option-btn"
+              id="opt-hiragana"
+              onclick="selectScript('hiragana')"
+            >
+              ひらがな
+            </button>
+          </div>
+          <details class="row-picker">
+            <summary>Välj kana-rader</summary>
+            <div class="row-grid" id="row-grid"></div>
+          </details>
+          <div class="option-group">
+            <button
+              class="option-btn"
+              id="opt-enkel"
+              onclick="selectKanaSet('basic')"
+            >
+              Enkel
+            </button>
+            <button
+              class="option-btn selected"
+              id="opt-utokad"
+              onclick="selectKanaSet('extended')"
+            >
+              Utökad
+            </button>
+          </div>
+          <div class="option-group">
+            <button
+              class="option-btn selected"
+              id="opt-20"
+              onclick="selectCount(20)"
+            >
+              20
+            </button>
+            <button class="option-btn" id="opt-30" onclick="selectCount(30)">
+              30
+            </button>
+            <button class="option-btn" id="opt-50" onclick="selectCount(50)">
+              50
+            </button>
+            <button
+              class="option-btn"
+              id="opt-all"
+              onclick="selectCount('ALL')"
+            >
+              Alla
+            </button>
+          </div>
         </div>
         <button class="option-btn" id="start" onClick="startGame()">
           Starta!
@@ -106,6 +116,47 @@
     let selectedScript = "katakana";
     let selectedKanaSet = "extended";
 
+    const PLAIN_ROWS = [
+      "a",
+      "ka",
+      "sa",
+      "ta",
+      "na",
+      "ha",
+      "ma",
+      "ya",
+      "ra",
+      "wa",
+    ];
+    const EXTENDED_MAP = {
+      ka: ["ga", "kya", "gya"],
+      sa: ["za", "sha", "ja"],
+      ta: ["da", "cha"],
+      na: ["nya"],
+      ha: ["ba", "pa", "hya", "bya", "pya"],
+      ma: ["mya"],
+      ra: ["rya"],
+    };
+
+    let selectedRows = [...PLAIN_ROWS];
+
+    (function () {
+      const grid = document.getElementById("row-grid");
+      for (const name of PLAIN_ROWS) {
+        const btn = document.createElement("button");
+        btn.className = "option-btn selected";
+        btn.id = `row-btn-${name}`;
+        btn.textContent = name;
+        btn.onclick = () => toggleRow(name);
+        grid.appendChild(btn);
+      }
+      const alla = document.createElement("button");
+      alla.className = "option-btn row-grid-all";
+      alla.textContent = "Alla";
+      alla.onclick = selectAllRows;
+      grid.appendChild(alla);
+    })();
+
     (function () {
       try {
         const prefs = JSON.parse(
@@ -116,12 +167,20 @@
           selectScript(prefs.script);
         if (["basic", "extended"].includes(prefs.kanaSet))
           selectKanaSet(prefs.kanaSet);
+        if (Array.isArray(prefs.rows)) {
+          const valid = prefs.rows.filter((n) => PLAIN_ROWS.includes(n));
+          if (valid.length > 0) {
+            selectedRows = valid;
+            renderRowButtons();
+          }
+        }
         if ([20, 30, 50, "ALL"].includes(prefs.count)) selectCount(prefs.count);
       } catch {}
     })();
 
     let kanaDriller = KanaDriller(selectedCount, selectedScript);
     let startTime;
+    let autoAdvanceTimer = null;
 
     function loadStats() {
       try {
@@ -141,6 +200,7 @@
         JSON.stringify({
           script: selectedScript,
           kanaSet: selectedKanaSet,
+          rows: selectedRows,
           count: selectedCount,
         }),
       );
@@ -270,6 +330,30 @@
       savePrefs();
     }
 
+    function renderRowButtons() {
+      for (const name of PLAIN_ROWS) {
+        const btn = document.getElementById(`row-btn-${name}`);
+        btn.classList.toggle("selected", selectedRows.includes(name));
+      }
+    }
+
+    function toggleRow(name) {
+      const idx = selectedRows.indexOf(name);
+      if (idx === -1) {
+        selectedRows.push(name);
+      } else if (selectedRows.length > 1) {
+        selectedRows.splice(idx, 1);
+      }
+      renderRowButtons();
+      savePrefs();
+    }
+
+    function selectAllRows() {
+      selectedRows = [...PLAIN_ROWS];
+      renderRowButtons();
+      savePrefs();
+    }
+
     function selectKanaSet(set) {
       selectedKanaSet = set;
       document
@@ -300,11 +384,17 @@
           kanaStats[key.slice(selectedScript.length + 1)] = val;
         }
       }
+      const effectiveRows = [...selectedRows];
+      if (selectedKanaSet === "extended") {
+        for (const row of selectedRows) {
+          if (EXTENDED_MAP[row]) effectiveRows.push(...EXTENDED_MAP[row]);
+        }
+      }
       kanaDriller = KanaDriller(
         selectedCount,
         selectedScript,
         kanaStats,
-        selectedKanaSet,
+        effectiveRows,
       );
       document.getElementById("drills").innerHTML = "";
       renderDrill();
@@ -319,6 +409,8 @@
     }
 
     function next() {
+      clearTimeout(autoAdvanceTimer);
+      autoAdvanceTimer = null;
       if (kanaDriller.isLast()) {
         renderResults();
       } else {
@@ -337,7 +429,7 @@
       if (answer === current.correctAnswer) {
         next();
       } else {
-        setTimeout(next, 3000);
+        autoAdvanceTimer = setTimeout(next, 3000);
       }
     }
 
