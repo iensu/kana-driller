@@ -162,7 +162,8 @@ body {
 }
 
 .option-btn.selected {
-  border-color: #00a000;
+  border-color: black;
+  border-width: 1px;
   background: #00a000;
 }
 

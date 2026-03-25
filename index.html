@@ -49,6 +49,9 @@
             </button>
           </div>
           <div class="option-group">
+            <button class="option-btn" id="opt-10" onclick="selectCount(10)">
+              10
+            </button>
             <button
               class="option-btn selected"
               id="opt-20"
@@ -97,6 +100,7 @@
             <button id="previous" onClick="previous()">&lt;</button>
             <button id="next" onClick="next()">&gt;</button>
           </div>
+          <button class="option-btn" onclick="abortGame()">Avbryt</button>
         </div>
       </div>
 
@@ -174,7 +178,7 @@
             renderRowButtons();
           }
         }
-        if ([20, 30, 50, "ALL"].includes(prefs.count)) selectCount(prefs.count);
+        if ([10, 20, 30, 50, "ALL"].includes(prefs.count)) selectCount(prefs.count);
       } catch {}
     })();
 
@@ -368,7 +372,7 @@
     function selectCount(count) {
       selectedCount = count;
       document
-        .querySelectorAll("#opt-20, #opt-30, #opt-50, #opt-all")
+        .querySelectorAll("#opt-10, #opt-20, #opt-30, #opt-50, #opt-all")
         .forEach((btn) => btn.classList.remove("selected"));
       const id = count === "ALL" ? "opt-all" : `opt-${count}`;
       document.getElementById(id).classList.add("selected");
@@ -437,6 +441,12 @@
       resultsScreen.classList.add("hide");
       gameScreen.classList.add("hide");
       introScreen.classList.remove("hide");
+    }
+
+    function abortGame() {
+      clearTimeout(autoAdvanceTimer);
+      autoAdvanceTimer = null;
+      goToStart();
     }
   </script>
 </html>
